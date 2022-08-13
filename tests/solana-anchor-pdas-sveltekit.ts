@@ -142,5 +142,3 @@ describe("solana-anchor-pdas-sveltekit", () => {
     await modifyLedgerAccount("green", 5, testKeypair2);
   });
 });
-
-describe("solana-pdas", () => {});
