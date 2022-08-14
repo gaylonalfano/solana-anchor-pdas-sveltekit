@@ -98,7 +98,7 @@ describe("solana-anchor-pdas-sveltekit", () => {
     }
 
     console.log(
-      `SUCCESS! Wallet: ${shortKey(wallet.publicKey)} -- PDA: ${shortKey(pda)} `
+      `SUCCESS! Wallet: ${wallet.publicKey} -- PDA: ${shortKey(pda)} `
     );
     console.log("Our PDA has a ledger account with data:\n");
     console.log(`    Color: ${data.color}   Balance: ${data.balance}`);

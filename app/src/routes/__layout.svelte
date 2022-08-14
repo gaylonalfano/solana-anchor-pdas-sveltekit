@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { walletStore } from '@svelte-on-solana/wallet-adapter-core';
 	import { WalletProvider, WalletMultiButton } from '@svelte-on-solana/wallet-adapter-ui';
 	import { AnchorConnectionProvider, workSpace } from '@svelte-on-solana/wallet-adapter-anchor';
 	import { clusterApiUrl } from '@solana/web3.js';
@@ -17,4 +16,3 @@
 <div>
 	<slot />
 </div>
-<WalletMultiButton />
