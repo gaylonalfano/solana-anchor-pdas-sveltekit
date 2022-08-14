@@ -43,9 +43,6 @@
 	/* 	value = account.count.toString(); */
 	/* } */
 
-	// let testKeypair1 = generateKeypair();
-	// let testKeypair2 = generateKeypair();
-
 	function shortKey(key: anchor.web3.PublicKey) {
 		return key.toString().substring(0, 8);
 	}
@@ -57,7 +54,7 @@
 	/* anchor.setProvider(provider); */
 	// WITH Store
 	/* const program = $workSpace.program; */
-	/* const provider = workspaceStore.provider; */
+	/* const provider = $workspaceStore.provider; */
 	/* anchor.setProvider(provider); */
 
 	// Q: How do I get my Program<T> i.e., as Program<SolanaAnchorPdasSveltekit>??
@@ -66,28 +63,53 @@
 	/* const program = workspaceStore.program.idl. */
 	/* 	.SolanaAnchorPdasSveltekit as Program<SolanaAnchorPdasSveltekit>; */
 
+	const DEVNET_LEDGERS = [
+		{
+			wallet: "2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE",
+			color: "red",
+			pda: "5ZKfW2vMyKShV1MoiekEASwVQBGkcZbYThFCUaAZxLzM"
+		},
+		{
+			wallet: "2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE",
+			color: "white",
+			pda: "imaENQ8o46KvzkVpx6DT1SXpxbgd9wXMPV1kMgShtfJ"
+		},
+		{
+			wallet: "2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE",
+			color: "yellow",
+			pda: "AYWUYuchSSskAKYNAVzV4zSkjh45RNg8vNwGe6PGMdFD"
+		},
+		{
+			wallet: "SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt",
+			color: "red",
+			pda: "Ezu4mwWzm4KSJ9xaGAbvofAVxAsTKLNjJorhR7P2oKkk"
+		},
+		{
+			wallet: "SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt",
+			color: "blue",
+			pda: "2eQc39fkTyRHproyQR9X6cq62cNhnhehqzgqprxBryMn"
+		}
+	]
+
 	$: {
 		console.log('workspaceStore', $workspaceStore);
 		console.log('walletStore', $walletStore);
 		console.log('wallet', wallet);
 		console.log('color', color);
-		console.log('ledgerAccount', ledgerAccount);
+		console.log('fetchedLedgerAccount', fetchedLedgerAccount);
 	}
 
 	// NOTE Ran my DEVNET tests to generate these for now...
-	const testWallet1 = "SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt";
-	const testPda1 = "Ezu4mwWzm4KSJ9xaGAbvofAVxAsTKLNjJorhR7P2oKkk" // expect: red 4
-	const testPda1Color = "red";
-	const testPda2 = "2eQc39fkTyRHproyQR9X6cq62cNhnhehqzgqprxBryMn"; // expect: blue 3
-	const testPda2Color = "blue";
+	const testWallet1 = DEVNET_LEDGERS[3].wallet;
+	const testPda1 = DEVNET_LEDGERS[3].pda;
+	const testPda1Color = DEVNET_LEDGERS[3].color;
+	const testPda2 = DEVNET_LEDGERS[4].pda;
+	const testPda2Color = DEVNET_LEDGERS[4].color;
 	let wallet = testWallet1;
 	let pda = testPda1;
 	let color = testPda1Color;
-	let ledgerAccount;
+	let fetchedLedgerAccount;
 	let newLedgerAccount;
-
-
-	let colorSeed: string = '';
 
 	async function generateKeypair() {
 		// Ensure that new wallet keypair has enough SOL
@@ -130,48 +152,55 @@
 		// Calls the program's on-chain create_ledger instruction function
 		// to create a ledger account LOCATED at our generated PDA address!
 		// NOTE This requires same args i.e., Context, color, system
-		// NOTE We're technically creating a ledger account located at
+		// NOTE We're technically creating a ledger account LOCATED at
 		// this PDA address!
 		await $workspaceStore.program?.methods
 			.createLedger(color)
 			.accounts({
-				// Q: Do I use snake_case or camelCase?
-				// NOTE Tutorial used camelCase even though it's snake_case in program
-				// A: Looks like I use camelCase...
 				ledgerAccount: pda,
-				wallet: wallet.publicKey
+				wallet: $workspaceStore.provider.wallet.publicKey, // OR: $walletStore.publicKey
 				// NOTE Anchor automatically adds System Program (and other programs if required)
 			})
-			.signers([wallet])
+			// NOTE FRONTEND: Don't need to pass signers() I guess....
+			// .signers([wallet]) // Q: Need this? A: NO!
 			.rpc();
+
 	}
 
-		// TODO Try to add a button and an input to trigger creating a new ledger
-
-	async function getLedgerAccount(color: string, wallet: string) {
-		/* let pda = await derivePda(color, $walletStore.publicKey); */
-		let walletPubkey = new anchor.web3.PublicKey(wallet);
-		let pda = await derivePda(color, walletPubkey);
+	async function handleGetLedgerAccount(color: string, wallet: string) {
+		// NOTE For testing purposes only. Taking input text and converting to correct types.
+		// NOTE Must convert string to type Publickey
+		let pda = await derivePda(color, new anchor.web3.PublicKey(wallet));
 		let data = await $workspaceStore.program?.account.ledger.fetch(pda);
-		// Update global ledgerAccount var
-		ledgerAccount = data;
+		fetchedLedgerAccount = data;
 		return data;
 	}
 
-	// async function getPdaAccount(seeds: string[]) {
-	// 	/* let pda = await derivePda(color, $walletStore.publicKey); */
-	// 	let walletPubkey = new anchor.web3.PublicKey(seeds[1]);
-	// 	let pda = await derivePda(seeds[0], walletPubkey);
-	// 	let data = await $workspaceStore.program?.account.ledger.fetch(pda);
-	// 	// Update global ledgerAccount var
-	// 	ledgerAccount = data;
-	// 	return data;
-	// }
+	async function handleCreateLedgerAccount() {
+		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
+
+		try {
+			// Q: How to pass a Keypair from walletStore? I have the signers([wallet]) for the ix
+			// REF: https://solana.stackexchange.com/questions/1984/anchor-signing-and-paying-for-transactions-to-interact-with-program
+			// REF: https://stackoverflow.com/questions/72549145/how-to-sign-and-call-anchor-solana-smart-contract-from-web-app
+			// REF: https://www.youtube.com/watch?v=vt8GUw_PDqM
+			// UPDATE: Looks like I can pass the $walletStore OR $workspaceStore.provider.wallet
+			// UPDATE: Looks like you DON'T pass signers([wallet]) call from frontend,
+			// since it fails if I pass it inside the program.methods.createLedger() call
+			await createLedgerAccount(color, pda, $walletStore); // WORKS
+			// await createLedgerAccount(color, pda, $workspaceStore.provider.wallet); // WORKS 
+
+			const data = await $workspaceStore.program?.account.ledger.fetch(pda);
+			fetchedLedgerAccount = data;
+		} catch (e) {
+			console.error("handleCreateLedgerAccount::Error: ", e);
+		}
+	}
 
 	async function modifyLedgerAccount(
 		color: string,
 		newBalance: number,
-		wallet: anchor.web3.Keypair
+		wallet: anchor.web3.Keypair // Q: How to pass this with $walletStore????
 	) {
 		console.log('------------------------------------');
 		// 1. Retrieve the PDA using helper
@@ -253,22 +282,22 @@
 				<h3>Connected wallet address:</h3>
 				<p>Wallet: {$walletStore.wallet?.publicKey}</p>
 				<p>Program: {$workspaceStore.program?.programId}</p>
-				<p>Color: {colorSeed}</p>
+				<p>Color: {color}</p>
 			</div>
 			<div class="create-account">
 				<input type="text" name="color" bind:value="{color}" placeholder="color">
-				<button on:click="{() => createLedgerAccount(color)}">Create Ledger</button>
+				<button on:click="{handleCreateLedgerAccount}">Create Ledger</button>
 			</div>
 			<div class="get-account">
 				<input type="text" name="color" bind:value="{color}" placeholder="color">
 				<input type="text" name="wallet" bind:value="{wallet}" placeholder="wallet">
 				<input type="text" name="pda" bind:value="{pda}" placeholder="pda">
-				<button on:click="{() => getLedgerAccount(color, wallet)}">Get Ledger</button>
-				{#if ledgerAccount}
+				<button on:click="{() => handleGetLedgerAccount(color, wallet)}">Get Ledger</button>
+				{#if fetchedLedgerAccount}
 					<div class="account">
 						<p><strong>Ledger Account</strong></p>
-						<p>Color: {ledgerAccount.color}</p>
-						<p>Balance: {ledgerAccount.balance}</p>
+						<p>Color: {fetchedLedgerAccount.color}</p>
+						<p>Balance: {fetchedLedgerAccount.balance}</p>
 					</div>
 				{/if}
 			</div>
