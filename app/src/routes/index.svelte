@@ -3,6 +3,7 @@
 	import { walletStore } from '@svelte-on-solana/wallet-adapter-core';
 	import { workSpace as workspaceStore } from '@svelte-on-solana/wallet-adapter-anchor';
 	import { fly } from 'svelte/transition';
+	import BN from 'bn.js';
 	import * as anchor from '@project-serum/anchor';
 
 	/* let value; */
@@ -108,8 +109,9 @@
 	let wallet = testWallet1;
 	let pda = testPda1;
 	let color = testPda1Color;
+	let newBalance = "0";
 	let fetchedLedgerAccount;
-	let newLedgerAccount;
+
 
 	async function generateKeypair() {
 		// Ensure that new wallet keypair has enough SOL
@@ -125,6 +127,7 @@
 		await new Promise((resolve) => setTimeout(resolve, 3 * 1000));
 		return keypair;
 	}
+
 
 	async function derivePda(color: string, pubkey: anchor.web3.PublicKey) {
 		// NOTE This is key! We can derive PDA WITHOUT hitting our program!
@@ -143,6 +146,17 @@
 
 		return pda;
 	}
+
+
+	async function handleGetLedgerAccount(color: string, wallet: string) {
+		// NOTE For testing purposes only. Taking input text and converting to correct types.
+		// NOTE Must convert string to type Publickey
+		let pda = await derivePda(color, new anchor.web3.PublicKey(wallet));
+		let data = await $workspaceStore.program?.account.ledger.fetch(pda);
+		fetchedLedgerAccount = data;
+		return data;
+	}
+
 
 	async function createLedgerAccount(
 		color: string,
@@ -167,14 +181,6 @@
 
 	}
 
-	async function handleGetLedgerAccount(color: string, wallet: string) {
-		// NOTE For testing purposes only. Taking input text and converting to correct types.
-		// NOTE Must convert string to type Publickey
-		let pda = await derivePda(color, new anchor.web3.PublicKey(wallet));
-		let data = await $workspaceStore.program?.account.ledger.fetch(pda);
-		fetchedLedgerAccount = data;
-		return data;
-	}
 
 	async function handleCreateLedgerAccount() {
 		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
@@ -197,6 +203,8 @@
 		}
 	}
 
+
+
 	async function modifyLedgerAccount(
 		color: string,
 		newBalance: number,
@@ -206,7 +214,8 @@
 		// 1. Retrieve the PDA using helper
 		// NOTE Don't pass pda address. Just pass color
 		let data; // Is type Ledger
-		let pda = await derivePda(color, wallet.publicKey);
+		/* let pda = await derivePda(color, wallet.publicKey); */
+		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
 
 		// 2. Try to retreive PDA account data if it exists
 		console.log(`Checking if account ${shortKey(pda)} exists for color: ${color}...`);
@@ -214,15 +223,18 @@
 			// NOTE We're technically seeing if our PDA address has a
 			// ledger account at its location (address)
 			data = await $workspaceStore.program?.account.ledger.fetch(pda);
+			fetchedLedgerAccount = data;
 			console.log(`Account already exists!`);
 		} catch (e) {
 			// console.log(e);
 			console.log(`Account ${shortKey(pda)} does NOT exist!`);
 			console.log('Creating account...');
 			// 1. Create account using helper that calls program instruction
-			await createLedgerAccount(color, pda, wallet);
+			/* await createLedgerAccount(color, pda, wallet); */
+			await createLedgerAccount(color, pda, $walletStore);
 			// 2. Retrieve account data
 			data = await $workspaceStore.program?.account.ledger.fetch(pda);
+			fetchedLedgerAccount = data;
 		}
 
 		console.log(`SUCCESS! Wallet: ${shortKey(wallet.publicKey)} -- PDA: ${shortKey(pda)} `);
@@ -236,13 +248,15 @@
 			.modifyLedger(newBalance)
 			.accounts({
 				ledgerAccount: pda,
-				wallet: wallet.publicKey
+				/* wallet: wallet.publicKey */
+				wallet: $walletStore.publicKey, // OR: $workspaceStore.provider.publicKey
 			})
-			.signers([wallet])
+			// .signers([wallet]) // NOT needed on FRONTEND I THINK...
 			.rpc();
 
 		// 4. Retrieve the updated data one last time
 		data = await $workspaceStore.program?.account.ledger.fetch(pda);
+		fetchedLedgerAccount = data;
 		// console.log(`Updated data for account located at:`);
 		console.log(`UPDATED! Wallet: ${shortKey(wallet.publicKey)} -- PDA: ${shortKey(pda)} `);
 		console.log(`    Color: ${data?.color}   Balance: ${data?.balance}`);
@@ -264,6 +278,17 @@
 			/* await modifyLedgerAccount("green", 5, testKeypair2); */
 		/* }); */
 
+	async function handleModifyLedgerAccount() {
+		let newBalanceNumber = new Number(newBalance);
+		try {
+			// Q: How should I pass in type number? Use new BN() or new Number()?
+			// A: Works using BN() and/or Number()!
+			await modifyLedgerAccount(color, new anchor.BN(newBalance), $workspaceStore.provider.wallet )
+		} catch (e) {
+			console.error(e);
+		}
+
+	}
 </script>
 
 <div class="wrapper-app">
@@ -287,6 +312,11 @@
 			<div class="create-account">
 				<input type="text" name="color" bind:value="{color}" placeholder="color">
 				<button on:click="{handleCreateLedgerAccount}">Create Ledger</button>
+			</div>
+			<div class="modify-account">
+				<input type="text" name="color" bind:value="{color}" placeholder="color">
+				<input type="text" name="newBalance" bind:value="{newBalance}" placeholder="new balance">
+				<button on:click="{handleModifyLedgerAccount}">Modify Ledger</button>
 			</div>
 			<div class="get-account">
 				<input type="text" name="color" bind:value="{color}" placeholder="color">
@@ -355,6 +385,14 @@
 	}
 
 	.create-account {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		margin: 20px;
+	}
+
+	.modify-account {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
