@@ -10,8 +10,8 @@ solana_anchor_pdas_sveltekit = "BtNQxoo46aU5qTKxehPSkfgxKKtJZVL7Evuz9pWhwPvN"
 url = "https://api.apr.dev"
 
 [provider]
-# cluster = "localnet"
-cluster = "devnet"
+cluster = "localnet"
+# cluster = "devnet"
 wallet = "/Users/gaylonalfano/.config/solana/id.json"
 
 [scripts]

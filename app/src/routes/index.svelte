@@ -6,44 +6,6 @@
 	import BN from 'bn.js';
 	import * as anchor from '@project-serum/anchor';
 
-	/* let value; */
-
-	/* $: console.log('value: ', value); */
-
-	/* async function createCounter() { */
-	/* 	try { */
-	/* 		/1* interact with the program via rpc *1/ */
-	/* 		await $workSpace.program.rpc.create({ */
-	/* 			accounts: { */
-	/* 				baseAccount: $workSpace.baseAccount.publicKey, */
-	/* 				user: $walletStore.publicKey, */
-	/* 				systemProgram: $workSpace.systemProgram.programId */
-	/* 			}, */
-	/* 			signers: [$workSpace.baseAccount] */
-	/* 		}); */
-
-	/* 		const account = await $workSpace.program.account.baseAccount.fetch( */
-	/* 			$workSpace.baseAccount.publicKey */
-	/* 		); */
-	/* 		value = account.count.toString(); */
-	/* 	} catch (err) { */
-	/* 		console.log('Transaction error: ', err); */
-	/* 	} */
-	/* } */
-
-	/* async function increment() { */
-	/* 	await $workSpace.program.rpc.increment({ */
-	/* 		accounts: { */
-	/* 			baseAccount: $workSpace.baseAccount.publicKey */
-	/* 		} */
-	/* 	}); */
-
-	/* 	const account = await $workSpace.program.account.baseAccount.fetch( */
-	/* 		$workSpace.baseAccount.publicKey */
-	/* 	); */
-	/* 	value = account.count.toString(); */
-	/* } */
-
 	function shortKey(key: anchor.web3.PublicKey) {
 		return key.toString().substring(0, 8);
 	}
@@ -214,6 +176,7 @@
 		// 1. Retrieve the PDA using helper
 		// NOTE Don't pass pda address. Just pass color
 		let data; // Is type Ledger
+		
 		/* let pda = await derivePda(color, wallet.publicKey); */
 		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
 
@@ -244,18 +207,26 @@
 
 		// 3. Make our modifications to the account using on-chain program function
 		// NOTE This is another program function instruction
+		// Q: Going to TEST whether other wallets can modify if they have the PDA...
+		// A: NOPE! Error: Signature verification failed
+		// let otherWalletInfo = DEVNET_LEDGERS[4];
+		// let pdaFromOtherWallet = await derivePda(color, new anchor.web3.PublicKey(otherWalletInfo.wallet));
+
 		await $workspaceStore.program?.methods
 			.modifyLedger(newBalance)
 			.accounts({
 				ledgerAccount: pda,
-				/* wallet: wallet.publicKey */
 				wallet: $walletStore.publicKey, // OR: $workspaceStore.provider.publicKey
+				// ledgerAccount: pdaFromOtherWallet, // CANNOT modify using a different wallet!
+				// wallet: new anchor.web3.PublicKey(otherWalletInfo.wallet), // CANNOT modify using a different wallet!
 			})
 			// .signers([wallet]) // NOT needed on FRONTEND I THINK...
 			.rpc();
 
+
 		// 4. Retrieve the updated data one last time
 		data = await $workspaceStore.program?.account.ledger.fetch(pda);
+		// data = await $workspaceStore.program?.account.ledger.fetch(pdaFromOtherWallet); // CANNOT modify using a different wallet!
 		fetchedLedgerAccount = data;
 		// console.log(`Updated data for account located at:`);
 		console.log(`UPDATED! Wallet: ${shortKey(wallet.publicKey)} -- PDA: ${shortKey(pda)} `);
@@ -279,7 +250,6 @@
 		/* }); */
 
 	async function handleModifyLedgerAccount() {
-		let newBalanceNumber = new Number(newBalance);
 		try {
 			// Q: How should I pass in type number? Use new BN() or new Number()?
 			// A: Works using BN() and/or Number()!
@@ -302,7 +272,7 @@
 
 	{#if $walletStore?.connected}
 		<div class="wrapper-content">
-			<div class="top">
+			<div class="connection">
 				<h2>workspace.provider.connection established!</h2>
 				<h3>Connected wallet address:</h3>
 				<p>Wallet: {$walletStore.wallet?.publicKey}</p>
@@ -369,11 +339,19 @@
 
 	.wrapper-content {
 		border-radius: 5px;
-		padding: 50px;
+		padding: 0 50px;
 		width: 400px;
 		margin: 0 auto;
 		text-align: center;
 		margin-bottom: 30px;
+	}
+
+	.connection > h2, h3 {
+		color: teal;
+	}
+
+	.connection > p {
+		color: orange;
 	}
 
 	.get-account {
