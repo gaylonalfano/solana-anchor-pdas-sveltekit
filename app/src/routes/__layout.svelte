@@ -6,7 +6,8 @@
 	import idl from '../../../target/idl/solana_anchor_pdas_sveltekit.json';
 
 	const localStorageKey = 'walletAdapter';
-	const network = clusterApiUrl('devnet');
+	// const network = clusterApiUrl('devnet'); // Can't swap for 'localnet'
+	const network = 'http://localhost:8899';
 
 	let wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
 </script>

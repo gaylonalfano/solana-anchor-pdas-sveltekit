@@ -28,31 +28,44 @@
 
 	const DEVNET_LEDGERS = [
 		{
-			wallet: "2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE",
-			color: "red",
-			pda: "5ZKfW2vMyKShV1MoiekEASwVQBGkcZbYThFCUaAZxLzM"
+			wallet: '2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE',
+			color: 'red',
+			pda: '5ZKfW2vMyKShV1MoiekEASwVQBGkcZbYThFCUaAZxLzM'
 		},
 		{
-			wallet: "2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE",
-			color: "white",
-			pda: "imaENQ8o46KvzkVpx6DT1SXpxbgd9wXMPV1kMgShtfJ"
+			wallet: '2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE',
+			color: 'white',
+			pda: 'imaENQ8o46KvzkVpx6DT1SXpxbgd9wXMPV1kMgShtfJ'
 		},
 		{
-			wallet: "2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE",
-			color: "yellow",
-			pda: "AYWUYuchSSskAKYNAVzV4zSkjh45RNg8vNwGe6PGMdFD"
+			wallet: '2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE',
+			color: 'yellow',
+			pda: 'AYWUYuchSSskAKYNAVzV4zSkjh45RNg8vNwGe6PGMdFD'
 		},
 		{
-			wallet: "SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt",
-			color: "red",
-			pda: "Ezu4mwWzm4KSJ9xaGAbvofAVxAsTKLNjJorhR7P2oKkk"
+			wallet: 'SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt',
+			color: 'red',
+			pda: 'Ezu4mwWzm4KSJ9xaGAbvofAVxAsTKLNjJorhR7P2oKkk'
 		},
 		{
-			wallet: "SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt",
-			color: "blue",
-			pda: "2eQc39fkTyRHproyQR9X6cq62cNhnhehqzgqprxBryMn"
+			wallet: 'SSyUdM98Z6Fa5faGyo5qrBmxFuB6koZt7cUt4i9JyXt',
+			color: 'blue',
+			pda: '2eQc39fkTyRHproyQR9X6cq62cNhnhehqzgqprxBryMn'
 		}
-	]
+	];
+
+	const LOCALNET_LEDGERS = [
+		{
+			wallet: '2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE',
+			color: 'yellow',
+			pda: ''
+		},
+		{
+			wallet: '2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE',
+			color: 'green',
+			pda: ''
+		}
+	];
 
 	$: {
 		console.log('workspaceStore', $workspaceStore);
@@ -71,9 +84,8 @@
 	let wallet = testWallet1;
 	let pda = testPda1;
 	let color = testPda1Color;
-	let newBalance = "0";
+	let newBalance = '0';
 	let fetchedLedgerAccount;
-
 
 	async function generateKeypair() {
 		// Ensure that new wallet keypair has enough SOL
@@ -89,7 +101,6 @@
 		await new Promise((resolve) => setTimeout(resolve, 3 * 1000));
 		return keypair;
 	}
-
 
 	async function derivePda(color: string, pubkey: anchor.web3.PublicKey) {
 		// NOTE This is key! We can derive PDA WITHOUT hitting our program!
@@ -109,7 +120,6 @@
 		return pda;
 	}
 
-
 	async function handleGetLedgerAccount(color: string, wallet: string) {
 		// NOTE For testing purposes only. Taking input text and converting to correct types.
 		// NOTE Must convert string to type Publickey
@@ -118,7 +128,6 @@
 		fetchedLedgerAccount = data;
 		return data;
 	}
-
 
 	async function createLedgerAccount(
 		color: string,
@@ -134,15 +143,13 @@
 			.createLedger(color)
 			.accounts({
 				ledgerAccount: pda,
-				wallet: $workspaceStore.provider.wallet.publicKey, // OR: $walletStore.publicKey
+				wallet: $workspaceStore.provider.wallet.publicKey // OR: $walletStore.publicKey
 				// NOTE Anchor automatically adds System Program (and other programs if required)
 			})
 			// NOTE FRONTEND: Don't need to pass signers() I guess....
 			// .signers([wallet]) // Q: Need this? A: NO!
 			.rpc();
-
 	}
-
 
 	async function handleCreateLedgerAccount() {
 		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
@@ -156,16 +163,14 @@
 			// UPDATE: Looks like you DON'T pass signers([wallet]) call from frontend,
 			// since it fails if I pass it inside the program.methods.createLedger() call
 			await createLedgerAccount(color, pda, $walletStore); // WORKS
-			// await createLedgerAccount(color, pda, $workspaceStore.provider.wallet); // WORKS 
+			// await createLedgerAccount(color, pda, $workspaceStore.provider.wallet); // WORKS
 
 			const data = await $workspaceStore.program?.account.ledger.fetch(pda);
 			fetchedLedgerAccount = data;
 		} catch (e) {
-			console.error("handleCreateLedgerAccount::Error: ", e);
+			console.error('handleCreateLedgerAccount::Error: ', e);
 		}
 	}
-
-
 
 	async function modifyLedgerAccount(
 		color: string,
@@ -176,7 +181,7 @@
 		// 1. Retrieve the PDA using helper
 		// NOTE Don't pass pda address. Just pass color
 		let data; // Is type Ledger
-		
+
 		/* let pda = await derivePda(color, wallet.publicKey); */
 		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
 
@@ -216,13 +221,12 @@
 			.modifyLedger(newBalance)
 			.accounts({
 				ledgerAccount: pda,
-				wallet: $walletStore.publicKey, // OR: $workspaceStore.provider.publicKey
+				wallet: $walletStore.publicKey // OR: $workspaceStore.provider.publicKey
 				// ledgerAccount: pdaFromOtherWallet, // CANNOT modify using a different wallet!
 				// wallet: new anchor.web3.PublicKey(otherWalletInfo.wallet), // CANNOT modify using a different wallet!
 			})
 			// .signers([wallet]) // NOT needed on FRONTEND I THINK...
 			.rpc();
-
 
 		// 4. Retrieve the updated data one last time
 		data = await $workspaceStore.program?.account.ledger.fetch(pda);
@@ -234,30 +238,29 @@
 		console.log('Successfully modified ledger account!');
 	}
 
-	  /* it("An example of PDAs in action", async () => { */
-			/* // Q: Is this new keypair essentially representing another */
-			/* // wallet???? Which is then used to create/modify ledger accounts? */
-			/* // A: YES! We need a Keypair (Wallet) to sign these transactions, */
-			/* // so this is a quick/easy way to simulate multiple users. */
-			/* const testKeypair1 = await generateKeypair(); */
-			/* await modifyLedgerAccount("red", 2, testKeypair1); */
-			/* await modifyLedgerAccount("red", 4, testKeypair1); */
-			/* await modifyLedgerAccount("blue", 3, testKeypair1); */
+	/* it("An example of PDAs in action", async () => { */
+	/* // Q: Is this new keypair essentially representing another */
+	/* // wallet???? Which is then used to create/modify ledger accounts? */
+	/* // A: YES! We need a Keypair (Wallet) to sign these transactions, */
+	/* // so this is a quick/easy way to simulate multiple users. */
+	/* const testKeypair1 = await generateKeypair(); */
+	/* await modifyLedgerAccount("red", 2, testKeypair1); */
+	/* await modifyLedgerAccount("red", 4, testKeypair1); */
+	/* await modifyLedgerAccount("blue", 3, testKeypair1); */
 
-			/* const testKeypair2 = await generateKeypair(); */
-			/* await modifyLedgerAccount("red", 3, testKeypair2); */
-			/* await modifyLedgerAccount("green", 5, testKeypair2); */
-		/* }); */
+	/* const testKeypair2 = await generateKeypair(); */
+	/* await modifyLedgerAccount("red", 3, testKeypair2); */
+	/* await modifyLedgerAccount("green", 5, testKeypair2); */
+	/* }); */
 
 	async function handleModifyLedgerAccount() {
 		try {
 			// Q: How should I pass in type number? Use new BN() or new Number()?
 			// A: Works using BN() and/or Number()!
-			await modifyLedgerAccount(color, new anchor.BN(newBalance), $workspaceStore.provider.wallet )
+			await modifyLedgerAccount(color, new anchor.BN(newBalance), $workspaceStore.provider.wallet);
 		} catch (e) {
 			console.error(e);
 		}
-
 	}
 </script>
 
@@ -280,19 +283,19 @@
 				<p>Color: {color}</p>
 			</div>
 			<div class="create-account">
-				<input type="text" name="color" bind:value="{color}" placeholder="color">
-				<button on:click="{handleCreateLedgerAccount}">Create Ledger</button>
+				<input type="text" name="color" bind:value={color} placeholder="color" />
+				<button on:click={handleCreateLedgerAccount}>Create Ledger</button>
 			</div>
 			<div class="modify-account">
-				<input type="text" name="color" bind:value="{color}" placeholder="color">
-				<input type="text" name="newBalance" bind:value="{newBalance}" placeholder="new balance">
-				<button on:click="{handleModifyLedgerAccount}">Modify Ledger</button>
+				<input type="text" name="color" bind:value={color} placeholder="color" />
+				<input type="text" name="newBalance" bind:value={newBalance} placeholder="new balance" />
+				<button on:click={handleModifyLedgerAccount}>Modify Ledger</button>
 			</div>
 			<div class="get-account">
-				<input type="text" name="color" bind:value="{color}" placeholder="color">
-				<input type="text" name="wallet" bind:value="{wallet}" placeholder="wallet">
-				<input type="text" name="pda" bind:value="{pda}" placeholder="pda">
-				<button on:click="{() => handleGetLedgerAccount(color, wallet)}">Get Ledger</button>
+				<input type="text" name="color" bind:value={color} placeholder="color" />
+				<input type="text" name="wallet" bind:value={wallet} placeholder="wallet" />
+				<input type="text" name="pda" bind:value={pda} placeholder="pda" />
+				<button on:click={() => handleGetLedgerAccount(color, wallet)}>Get Ledger</button>
 				{#if fetchedLedgerAccount}
 					<div class="account">
 						<p><strong>Ledger Account</strong></p>
@@ -302,7 +305,7 @@
 				{/if}
 			</div>
 		</div>
-		<p class="warning">You are connected to:  <strong>{$workspaceStore.network}</strong>!</p>
+		<p class="warning">You are connected to: <strong>{$workspaceStore.network}</strong>!</p>
 	{:else}
 		<p class="warning">You are not connected...</p>
 	{/if}
@@ -346,7 +349,8 @@
 		margin-bottom: 30px;
 	}
 
-	.connection > h2, h3 {
+	.connection > h2,
+	h3 {
 		color: teal;
 	}
 
@@ -377,7 +381,6 @@
 		justify-content: center;
 		margin: 20px;
 	}
-	
 
 	button {
 		border: none;
