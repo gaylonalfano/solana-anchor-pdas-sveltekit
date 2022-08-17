@@ -1,6 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { SolanaAnchorPdasSveltekit } from "../target/types/solana_anchor_pdas_sveltekit";
+import { createLedgerInstructionsBuffer } from "./utils";
 
 function shortKey(key: anchor.web3.PublicKey) {
   // For condensed logs
@@ -110,6 +111,69 @@ describe("solana-anchor-pdas-sveltekit", () => {
     // NOTE This is another program function instruction
     await program.methods
       .modifyLedger(newBalance)
+      .accounts({
+        ledgerAccount: pda,
+        wallet: wallet.publicKey,
+      })
+      .signers([wallet])
+      .rpc();
+
+    // 4. Retrieve the updated data one last time
+    data = await program.account.ledger.fetch(pda);
+    // console.log(`Updated data for account located at:`);
+    console.log(
+      `UPDATED! Wallet: ${shortKey(wallet.publicKey)} -- PDA: ${shortKey(pda)} `
+    );
+    console.log(`    Color: ${data.color}   Balance: ${data.balance}`);
+    console.log("Successfully modified ledger account!");
+  }
+
+  async function modifyLedgerAccountWithInstructionData(
+    color: string,
+    operation: number,
+    operation_value: number,
+    wallet: anchor.web3.Keypair
+  ) {
+    console.log("------------------------------------");
+    // 1. Retrieve the PDA using helper
+    // NOTE Don't pass pda address. Just pass color
+    let data; // Is type Ledger
+    let pda = await derivePda(color, wallet.publicKey);
+
+    // 2. Try to retreive PDA account data if it exists
+    console.log(
+      `Checking if account ${shortKey(pda)} exists for color: ${color}...`
+    );
+    try {
+      // NOTE We're technically seeing if our PDA address has a
+      // ledger account at its location (address)
+      data = await program.account.ledger.fetch(pda);
+      console.log(`Account already exists!`);
+    } catch (e) {
+      // console.log(e);
+      console.log(`Account ${shortKey(pda)} does NOT exist!`);
+      console.log("Creating account...");
+      // 1. Create account using helper that calls program instruction
+      await createLedgerAccount(color, pda, wallet);
+      // 2. Retrieve account data
+      data = await program.account.ledger.fetch(pda);
+    }
+
+    console.log(
+      `SUCCESS! Wallet: ${wallet.publicKey} -- PDA: ${shortKey(pda)} `
+    );
+    console.log("Our PDA has a ledger account with data:\n");
+    console.log(`    Color: ${data.color}   Balance: ${data.balance}`);
+    console.log(
+      `Modifying balance of ${data.color} from ${data.balance} to ${newBalance}`
+    );
+
+    // 3. Make our modifications to the account using on-chain program function
+    // NOTE This is another program function instruction
+    // FIXME Need to pass data: LedgerInstructions by building
+    // the BufferLayout for the struct (I think...)
+    await program.methods
+      .modifyLedgerWithInstructionData(newBalance)
       .accounts({
         ledgerAccount: pda,
         wallet: wallet.publicKey,

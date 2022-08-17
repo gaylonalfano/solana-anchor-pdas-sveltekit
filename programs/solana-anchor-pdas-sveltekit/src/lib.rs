@@ -18,6 +18,25 @@ pub mod solana_anchor_pdas_sveltekit {
 
         let ledger_account = &mut ctx.accounts.ledger_account;
         ledger_account.balance = new_balance;
+
+        Ok(())
+    }
+
+    // Q: How do I implement/pass program instructions data to utilize the
+    // custom evaluate function?
+    pub fn modify_ledger_with_instruction_data(ctx: Context<ModifyLedger>, data: LedgerInstructions) -> Result<()> {
+        // 1. Deserialize so we can work with the account
+        let ledger_account = &mut ctx.accounts.ledger_account;
+        // 2. Work with account data by using program's instruction data (LedgerInstructions)
+        // TODO Probably on the Client side......
+        // Q: Is data.evaluate(ledger_account.balance) enough? Obviously need to pass
+        // in the LedgerInstructions operation, operation_value args from client...
+        // Q: Do I pass the operation, operation_value from client using something like
+        // LedgerInstructions { operation: 1, operation_value: 5 } or, do I use the
+        // custom util function (e.g., createCalculatorInstructionsBuffer(o, ov)) and BufferLayout?
+        // let ledger_instructions = LedgerInstructions::try_from_slice(&data)?;
+        ledger_account.balance = data.evaluate(ledger_account.balance);
+
         Ok(())
     }
 }
@@ -54,4 +73,26 @@ pub struct Ledger {
     // pub bump_seed: u8;
     pub color: String,
     pub balance: u32,
+}
+
+// Q: How do you create the struct for the program's instruction data using Anchor?
+// A: Looks like it's the same as any Account struct by adding #[account]
+// REF: https://book.anchor-lang.com/anchor_in_depth/the_program_module.html
+#[account]
+pub struct LedgerInstructions {
+    operation: u32,
+    operation_value: u32,
+}
+
+impl LedgerInstructions {
+    pub fn evaluate(self, value: u32) -> u32 {
+        // Modify the incoming Ledger balance by this value
+        match &self.operation {
+            1 => value + &self.operation_value,
+            2 => value - &self.operation_value,
+            3 => value * &self.operation_value,
+            _ => value * 0, // Reset balance to 0
+        }
+    }
+    
 }
