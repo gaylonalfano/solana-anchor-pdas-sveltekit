@@ -78,6 +78,12 @@ export async function createCalculatorInstructionsBuffer(
   return buffer;
 }
 
+// UPDATE 8/18: NOT Needed! This may not even be needed when using Anchor, since Anchor
+// automatically creates the IDL and types for the Client! I finally got the
+// custom Instruction Data struct (LedgerInstructions) to work, and I didn't
+// even need to use this helper function.
+// NOTE I DID notice the types used camelCase instead of snake_case, which also
+// caused me some errors! But AGAIN, this Buffer doesn't seem necessary!
 export async function createLedgerInstructionsBuffer(
   operation: number,
   operation_value: number

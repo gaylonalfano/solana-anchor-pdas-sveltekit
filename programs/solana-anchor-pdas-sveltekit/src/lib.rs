@@ -29,7 +29,6 @@ pub mod solana_anchor_pdas_sveltekit {
         // 1. Deserialize so we can work with the account
         let ledger_account = &mut ctx.accounts.ledger_account;
         // 2. Work with account data by using program's instruction data (LedgerInstructions)
-        // TODO Probably on the Client side......
         // Q: Is data.evaluate(ledger_account.balance) enough? Obviously need to pass
         // in the LedgerInstructions operation, operation_value args from client...
         // Q: Do I pass the operation, operation_value from client using something like

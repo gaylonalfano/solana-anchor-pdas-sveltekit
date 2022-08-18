@@ -1,9 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import {
-  SolanaAnchorPdasSveltekit,
-  LedgerInstructions,
-} from "../target/types/solana_anchor_pdas_sveltekit";
+import { SolanaAnchorPdasSveltekit } from "../target/types/solana_anchor_pdas_sveltekit";
 import {
   createLedgerInstructionsBuffer,
   getStringForInstruction,
@@ -209,10 +206,12 @@ describe("solana-anchor-pdas-sveltekit", () => {
       // .modifyLedgerWithInstructionData(ledgerInstructions) // Q: Does this match data: LedgerInstructions?
       // Q: Is Buffer the right type for this when using Anchor?
       // REF: Check out the tic-tac-toe tests for the Tile (they pass object directly!)
+      // A: NO! Passes without using the Buffer! Looks like Anchor's generated IDL does
+      // the job for us!
       .modifyLedgerWithInstructionData({
         operation: operation,
         operationValue: operation_value,
-      }) // Q: Does this match data: LedgerInstructions?
+      }) // MUST match the IDL type for LedgerInstructions
       .accounts({
         ledgerAccount: pda,
         wallet: wallet.publicKey,
@@ -249,5 +248,7 @@ describe("solana-anchor-pdas-sveltekit", () => {
     await modifyLedgerAccount("red", 1, testKeypair3);
     // Add 3 to 1, so => 4
     await modifyLedgerAccountWithInstructionData("red", 1, 3, testKeypair3);
+    // Q: What happens if balance default is 0? Should get new balance of 1...
+    await modifyLedgerAccountWithInstructionData("blue", 1, 1, testKeypair3);
   });
 });
