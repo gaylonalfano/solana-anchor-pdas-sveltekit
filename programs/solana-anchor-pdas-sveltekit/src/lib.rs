@@ -24,6 +24,7 @@ pub mod solana_anchor_pdas_sveltekit {
 
     // Q: How do I implement/pass program instructions data to utilize the
     // custom evaluate function?
+    // NOTE I made a Buffer replicating structure of LedgerInstructions...
     pub fn modify_ledger_with_instruction_data(ctx: Context<ModifyLedger>, data: LedgerInstructions) -> Result<()> {
         // 1. Deserialize so we can work with the account
         let ledger_account = &mut ctx.accounts.ledger_account;
@@ -35,6 +36,25 @@ pub mod solana_anchor_pdas_sveltekit {
         // LedgerInstructions { operation: 1, operation_value: 5 } or, do I use the
         // custom util function (e.g., createCalculatorInstructionsBuffer(o, ov)) and BufferLayout?
         // let ledger_instructions = LedgerInstructions::try_from_slice(&data)?;
+        // ledger_account.balance = data.evaluate(ledger_account.balance); // ERROR: Doesn't modify balance
+                                                                        // Q: If a new
+                                                                        // ledger_account is
+                                                                        // created, the balance =
+                                                                        // 0. So, if I pass in 0,
+                                                                        //    and operation = 1,
+                                                                        //    operation_value = 1,
+                                                                        //    we should get updated
+                                                                        //    balance of 1...right?
+        // Q: How do I pass instructions data with Anchor?
+        // Could be a serialization issue since I'm using Buffer and Borsh:
+        // REF: https://discord.com/channels/889577356681945098/889577399308656662/996883609787056139
+        // Suggested something like:
+        // Instruction {
+        //    data: LedgerInstructions { ... }.data(),
+        //    program_id: ...,
+        //    accounts: ...
+        // }
+        // TODO Consider building the raw TX and IX following calculator.ts
         ledger_account.balance = data.evaluate(ledger_account.balance);
 
         Ok(())
@@ -77,8 +97,13 @@ pub struct Ledger {
 
 // Q: How do you create the struct for the program's instruction data using Anchor?
 // A: Looks like it's the same as any Account struct by adding #[account]
+// NOTE We used BorshSerialize, BorshDeserialize, Debug in instructions project
 // REF: https://book.anchor-lang.com/anchor_in_depth/the_program_module.html
-#[account]
+// #[account]
+// Q: Do I need more than #[account]? Does #[account] do all of this?
+// REF: https://book.anchor-lang.com/anchor_in_depth/the_program_module.html
+// A: Not sure, but no difference between all these and #[account]
+#[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
 pub struct LedgerInstructions {
     operation: u32,
     operation_value: u32,
@@ -87,6 +112,7 @@ pub struct LedgerInstructions {
 impl LedgerInstructions {
     pub fn evaluate(self, value: u32) -> u32 {
         // Modify the incoming Ledger balance by this value
+        msg!("LedgerInstructions: {:?}", &self);
         match &self.operation {
             1 => value + &self.operation_value,
             2 => value - &self.operation_value,

@@ -1,7 +1,13 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { SolanaAnchorPdasSveltekit } from "../target/types/solana_anchor_pdas_sveltekit";
-import { createLedgerInstructionsBuffer } from "./utils";
+import {
+  SolanaAnchorPdasSveltekit,
+  LedgerInstructions,
+} from "../target/types/solana_anchor_pdas_sveltekit";
+import {
+  createLedgerInstructionsBuffer,
+  getStringForInstruction,
+} from "./utils";
 
 function shortKey(key: anchor.web3.PublicKey) {
   // For condensed logs
@@ -132,6 +138,7 @@ describe("solana-anchor-pdas-sveltekit", () => {
     color: string,
     operation: number,
     operation_value: number,
+    // operationValue: number,
     wallet: anchor.web3.Keypair
   ) {
     console.log("------------------------------------");
@@ -164,16 +171,48 @@ describe("solana-anchor-pdas-sveltekit", () => {
     );
     console.log("Our PDA has a ledger account with data:\n");
     console.log(`    Color: ${data.color}   Balance: ${data.balance}`);
-    console.log(
-      `Modifying balance of ${data.color} from ${data.balance} to ${newBalance}`
-    );
 
     // 3. Make our modifications to the account using on-chain program function
     // NOTE This is another program function instruction
-    // FIXME Need to pass data: LedgerInstructions by building
+    // TODO Need to pass data: LedgerInstructions by building
     // the BufferLayout for the struct (I think...)
+    const ledgerInstructions: Buffer = await createLedgerInstructionsBuffer(
+      operation,
+      operation_value
+      // operationValue
+    );
+
+    console.log(
+      `We're going to ${await getStringForInstruction(
+        operation,
+        operation_value
+        // operationValue
+      )}`
+    );
+
+    // const instruction = new anchor.web3.TransactionInstruction({
+    //   keys: [{ pubkey: pda, isSigner: false, isWritable: true }],
+    //   program.programId,
+    //   data: ledgerInstructions,
+    // });
+
+    // Q: How do I pass instructions data with Anchor?
+    // Could be a serialization issue since I'm using Buffer and Borsh:
+    // REF: https://discord.com/channels/889577356681945098/889577399308656662/996883609787056139
+    // Suggested something like:
+    // Instruction {
+    //    data: LedgerInstructions { ... }.data(),
+    //    program_id: ...,
+    //    accounts: ...
+    // }
     await program.methods
-      .modifyLedgerWithInstructionData(newBalance)
+      // .modifyLedgerWithInstructionData(ledgerInstructions) // Q: Does this match data: LedgerInstructions?
+      // Q: Is Buffer the right type for this when using Anchor?
+      // REF: Check out the tic-tac-toe tests for the Tile (they pass object directly!)
+      .modifyLedgerWithInstructionData({
+        operation: operation,
+        operationValue: operation_value,
+      }) // Q: Does this match data: LedgerInstructions?
       .accounts({
         ledgerAccount: pda,
         wallet: wallet.publicKey,
@@ -196,13 +235,19 @@ describe("solana-anchor-pdas-sveltekit", () => {
     // wallet???? Which is then used to create/modify ledger accounts?
     // A: YES! We need a Keypair (Wallet) to sign these transactions,
     // so this is a quick/easy way to simulate multiple users.
-    const testKeypair1 = await generateKeypair();
-    await modifyLedgerAccount("red", 2, testKeypair1);
-    await modifyLedgerAccount("red", 4, testKeypair1);
-    await modifyLedgerAccount("blue", 3, testKeypair1);
+    // const testKeypair1 = await generateKeypair();
+    // await modifyLedgerAccount("red", 2, testKeypair1);
+    // await modifyLedgerAccount("red", 4, testKeypair1);
+    // await modifyLedgerAccount("blue", 3, testKeypair1);
 
-    const testKeypair2 = await generateKeypair();
-    await modifyLedgerAccount("red", 3, testKeypair2);
-    await modifyLedgerAccount("green", 5, testKeypair2);
+    // const testKeypair2 = await generateKeypair();
+    // await modifyLedgerAccount("red", 3, testKeypair2);
+    // await modifyLedgerAccount("green", 5, testKeypair2);
+
+    const testKeypair3 = await generateKeypair();
+    // Create/init and change balance to 1
+    await modifyLedgerAccount("red", 1, testKeypair3);
+    // Add 3 to 1, so => 4
+    await modifyLedgerAccountWithInstructionData("red", 1, 3, testKeypair3);
   });
 });

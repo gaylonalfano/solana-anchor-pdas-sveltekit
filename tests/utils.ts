@@ -83,6 +83,9 @@ export async function createLedgerInstructionsBuffer(
   operation_value: number
 ): Promise<Buffer> {
   // Define the layout/schema of the instructions struct
+  // TODO Add some logs to see what data gets packed back inside the Buffer
+  // since I'm seeing LedgerInstructions { operation: 0, operation_value: 0 }
+  // when testing...
   const bufferLayout: BufferLayout.Structure<any> = BufferLayout.struct([
     BufferLayout.u32("operation"),
     BufferLayout.u32("operation_value"),
@@ -101,5 +104,6 @@ export async function createLedgerInstructionsBuffer(
     buffer
   );
 
+  // console.log("createLedgerInstructionsBuffer: ", buffer);
   return buffer;
 }
