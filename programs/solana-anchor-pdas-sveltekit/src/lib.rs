@@ -29,31 +29,25 @@ pub mod solana_anchor_pdas_sveltekit {
         // 1. Deserialize so we can work with the account
         let ledger_account = &mut ctx.accounts.ledger_account;
         // 2. Work with account data by using program's instruction data (LedgerInstructions)
+        // Q: How do I pass instructions data with Anchor?
         // Q: Is data.evaluate(ledger_account.balance) enough? Obviously need to pass
         // in the LedgerInstructions operation, operation_value args from client...
         // Q: Do I pass the operation, operation_value from client using something like
         // LedgerInstructions { operation: 1, operation_value: 5 } or, do I use the
         // custom util function (e.g., createCalculatorInstructionsBuffer(o, ov)) and BufferLayout?
-        // let ledger_instructions = LedgerInstructions::try_from_slice(&data)?;
-        // ledger_account.balance = data.evaluate(ledger_account.balance); // ERROR: Doesn't modify balance
-                                                                        // Q: If a new
-                                                                        // ledger_account is
-                                                                        // created, the balance =
-                                                                        // 0. So, if I pass in 0,
-                                                                        //    and operation = 1,
-                                                                        //    operation_value = 1,
-                                                                        //    we should get updated
-                                                                        //    balance of 1...right?
-        // Q: How do I pass instructions data with Anchor?
-        // Could be a serialization issue since I'm using Buffer and Borsh:
         // REF: https://discord.com/channels/889577356681945098/889577399308656662/996883609787056139
+        // Could be a serialization issue since I'm using Buffer and Borsh... Could consider building 
+        // the raw TX and IX following calculator.ts
         // Suggested something like:
         // Instruction {
         //    data: LedgerInstructions { ... }.data(),
         //    program_id: ...,
         //    accounts: ...
         // }
-        // TODO Consider building the raw TX and IX following calculator.ts
+        // A: NOT NECESSARY! Buffer IS NOT NEEDED! Just pass an Object that matches the IDL Type!
+        // Anchor's generated IDL creates all the necessary Types, so no need for me to manually
+        // deal with Buffers and BufferLayouts, etc! See notes in tests TS file and tic-tac-toe
+        // Tile struct for reference! They just pass the direct Object!
         ledger_account.balance = data.evaluate(ledger_account.balance);
 
         Ok(())
@@ -98,10 +92,10 @@ pub struct Ledger {
 // A: Looks like it's the same as any Account struct by adding #[account]
 // NOTE We used BorshSerialize, BorshDeserialize, Debug in instructions project
 // REF: https://book.anchor-lang.com/anchor_in_depth/the_program_module.html
-// #[account]
 // Q: Do I need more than #[account]? Does #[account] do all of this?
 // REF: https://book.anchor-lang.com/anchor_in_depth/the_program_module.html
 // A: Not sure, but no difference between all these and #[account]
+// #[account] OR...
 #[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
 pub struct LedgerInstructions {
     operation: u32,
