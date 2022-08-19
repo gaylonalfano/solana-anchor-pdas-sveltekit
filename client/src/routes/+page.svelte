@@ -73,6 +73,8 @@
 		console.log('wallet', wallet);
 		console.log('color', color);
 		console.log('fetchedLedgerAccount', fetchedLedgerAccount);
+		/* console.log('operation', operation); */
+		/* console.log('operationValue', operationValue); */
 	}
 
 	// NOTE Ran my DEVNET tests to generate these for now...
@@ -86,6 +88,8 @@
 	let color = testPda1Color;
 	let newBalance = '0';
 	let fetchedLedgerAccount;
+	let operation: string;
+	let operationValue: string;
 
 	async function generateKeypair() {
 		// Ensure that new wallet keypair has enough SOL
@@ -248,26 +252,96 @@
 		console.log('Successfully modified ledger account!');
 	}
 
-	/* it("An example of PDAs in action", async () => { */
-	/* // Q: Is this new keypair essentially representing another */
-	/* // wallet???? Which is then used to create/modify ledger accounts? */
-	/* // A: YES! We need a Keypair (Wallet) to sign these transactions, */
-	/* // so this is a quick/easy way to simulate multiple users. */
-	/* const testKeypair1 = await generateKeypair(); */
-	/* await modifyLedgerAccount("red", 2, testKeypair1); */
-	/* await modifyLedgerAccount("red", 4, testKeypair1); */
-	/* await modifyLedgerAccount("blue", 3, testKeypair1); */
-
-	/* const testKeypair2 = await generateKeypair(); */
-	/* await modifyLedgerAccount("red", 3, testKeypair2); */
-	/* await modifyLedgerAccount("green", 5, testKeypair2); */
-	/* }); */
-
 	async function handleModifyLedgerAccount() {
 		try {
 			// Q: How should I pass in type number? Use new BN() or new Number()?
 			// A: Works using BN() and/or Number()!
 			await modifyLedgerAccount(color, new anchor.BN(newBalance), $workspaceStore.provider.wallet);
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	async function modifyLedgerAccountWithInstructionData(
+		color: string,
+		operation: number,
+		operation_value: number,
+		wallet: anchor.web3.Keypair
+	) {
+		console.log('------------------------------------');
+		// 1. Retrieve the PDA using helper
+		// NOTE Don't pass pda address. Just pass color
+		let data; // Is type Ledger
+		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
+
+		// 2. Try to retreive PDA account data if it exists
+		console.log(`Checking if account ${shortKey(pda)} exists for color: ${color}...`);
+		try {
+			// NOTE We're technically seeing if our PDA address has a
+			// ledger account at its location (address)
+			data = await $workspaceStore.program?.account.ledger.fetch(pda);
+			console.log(`Account already exists!`);
+		} catch (e) {
+			// console.log(e);
+			console.log(`Account ${shortKey(pda)} does NOT exist!`);
+			console.log('Creating account...');
+			// 1. Create account using helper that calls program instruction
+			await createLedgerAccount(color, pda, $walletStore);
+			// 2. Retrieve account data
+			data = await $workspaceStore.program?.account.ledger.fetch(pda);
+			fetchedLedgerAccount = data;
+		}
+
+		console.log(`SUCCESS! Wallet: ${wallet.publicKey} -- PDA: ${shortKey(pda)} `);
+		console.log('Our PDA has a ledger account with data:\n');
+		console.log(`    Color: ${data?.color}   Balance: ${data?.balance}`);
+
+		// 3. Make our modifications to the account using on-chain program function
+		// NOTE This is another program function instruction
+		// console.log(
+		// 	`We're going to ${await getStringForInstruction(
+		// 		operation,
+		// 		operation_value
+		// 		// operationValue
+		// 	)}`
+		// );
+
+		await $workspaceStore.program?.methods
+			// Q: Is Buffer the right type for this when using Anchor?
+			// REF: Check out the tic-tac-toe tests for the Tile (they pass object directly!)
+			// A: NO! Passes without using the Buffer! Looks like Anchor's generated IDL does
+			// the job for us!
+			.modifyLedgerWithInstructionData({
+				operation: operation,
+				operationValue: operation_value
+			}) // MUST match the IDL type for LedgerInstructions
+			.accounts({
+				ledgerAccount: pda,
+				wallet: $walletStore.publicKey
+			})
+			// .signers([wallet]) // NOT needed on FRONTEND I THINK...
+			.rpc();
+
+		// 4. Retrieve the updated data one last time
+		data = await $workspaceStore.program?.account.ledger.fetch(pda);
+		// console.log(`Updated data for account located at:`);
+		console.log(`UPDATED! Wallet: ${shortKey(wallet.publicKey)} -- PDA: ${shortKey(pda)} `);
+		console.log(`    Color: ${data?.color}   Balance: ${data?.balance}`);
+		console.log('Successfully modified ledger account!');
+		// NOTE Sample test:
+		// await modifyLedgerAccountWithInstructionData("red", 1, 3, testKeypair3);
+	}
+
+	async function handleModifyLedgerAccountWithInstructionData() {
+		try {
+			// Q: How should I pass in type number? Use new BN() or new Number()?
+			// A: Works using BN() and/or Number()!
+			await modifyLedgerAccountWithInstructionData(
+				color,
+				new anchor.BN(operation),
+				new anchor.BN(operationValue),
+				$workspaceStore.provider?.wallet
+			);
 		} catch (e) {
 			console.error(e);
 		}
@@ -300,6 +374,17 @@
 				<input type="text" name="color" bind:value={color} placeholder="color" />
 				<input type="text" name="newBalance" bind:value={newBalance} placeholder="new balance" />
 				<button on:click={handleModifyLedgerAccount}>Modify Ledger</button>
+			</div>
+			<div class="modify-account-with-instruction-data">
+				<input type="text" name="color" bind:value={color} placeholder="color" />
+				<input type="text" name="operation" bind:value={operation} placeholder="operation" />
+				<input
+					type="text"
+					name="operationValue"
+					bind:value={operationValue}
+					placeholder="operation value"
+				/>
+				<button on:click={handleModifyLedgerAccountWithInstructionData}>Modify Ledger w/ IX</button>
 			</div>
 			<div class="get-account">
 				<input type="text" name="color" bind:value={color} placeholder="color" />
@@ -385,6 +470,14 @@
 	}
 
 	.modify-account {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		margin: 20px;
+	}
+
+	.modify-account-with-instruction-data {
 		display: flex;
 		flex-direction: column;
 		align-items: center;

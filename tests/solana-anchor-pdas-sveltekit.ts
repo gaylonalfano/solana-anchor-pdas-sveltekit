@@ -173,11 +173,12 @@ describe("solana-anchor-pdas-sveltekit", () => {
     // NOTE This is another program function instruction
     // TODO Need to pass data: LedgerInstructions by building
     // the BufferLayout for the struct (I think...)
-    const ledgerInstructions: Buffer = await createLedgerInstructionsBuffer(
-      operation,
-      operation_value
-      // operationValue
-    );
+    // A: WRONG! Use IDL generated Types!
+    // const ledgerInstructions: Buffer = await createLedgerInstructionsBuffer(
+    //   operation,
+    //   operation_value
+    //   // operationValue
+    // );
 
     console.log(
       `We're going to ${await getStringForInstruction(
