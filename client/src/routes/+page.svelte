@@ -154,6 +154,16 @@
 	async function handleCreateLedgerAccount() {
 		let pda = await derivePda(color, new anchor.web3.PublicKey($walletStore.publicKey));
 
+		// If testing on localnet:
+		if ($workspaceStore.network == 'http://localhost:8899') {
+			// Airdrop some SOL to the wallet
+			const airdropRequest = await $workspaceStore.connection.requestAirdrop(
+				$walletStore.publicKey,
+				anchor.web3.LAMPORTS_PER_SOL * 2
+			);
+			await $workspaceStore.connection.confirmTransaction(airdropRequest);
+		}
+
 		try {
 			// Q: How to pass a Keypair from walletStore? I have the signers([wallet]) for the ix
 			// REF: https://solana.stackexchange.com/questions/1984/anchor-signing-and-paying-for-transactions-to-interact-with-program
