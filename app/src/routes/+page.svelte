@@ -25,7 +25,6 @@
 	// https://github.com/svelte-on-solana/wallet-adapter/blob/master/packages/anchor/src/lib/AnchorConnectionProvider.svelte
 	/* const program = workspaceStore.program.idl. */
 	/* 	.SolanaAnchorPdasSveltekit as Program<SolanaAnchorPdasSveltekit>; */
-
 	const DEVNET_LEDGERS = [
 		{
 			wallet: '2BScwdytqa6BnjW6SUqKt8uaKYn6M4gLbWBdn3JuJWjE',
