@@ -1,5 +1,5 @@
 [features]
-seeds = false
+seeds = false # true allows you to use tx.pubkeys().autoPdaDeriv
 skip-lint = false
 [programs.localnet]
 solana_anchor_pdas_sveltekit = "BtNQxoo46aU5qTKxehPSkfgxKKtJZVL7Evuz9pWhwPvN"
