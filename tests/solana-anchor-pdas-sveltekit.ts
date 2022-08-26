@@ -33,6 +33,8 @@ describe("solana-anchor-pdas-sveltekit", () => {
   }
 
   async function derivePda(color: string, pubkey: anchor.web3.PublicKey) {
+    // UPDATE 8/26 - Apparently if you set Anchor.toml > seeds = true, then Anchor
+    // will auto-derive your PDA for you: await program.methods.initialize().pubkeys().myPdaAccount
     // NOTE This is key! We can derive PDA WITHOUT hitting our program!
     // Then we can use this PDA address in our functions as a check to see
     // whether there is a ledger account at this PDA address.
